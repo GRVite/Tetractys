@@ -15,13 +15,13 @@ import os
 from shutil import copyfile
 
 # rootDir = '/Users/vite/navigation_system/Data'
-rootDir =  '/Volumes/Seagate/Kraken'
+rootDir =  '/Volumes/Seagate/Kraken/K25'
 # Select animal ID and session
-ID = 'A6100'
-session = 'A6100-201106'
+ID = 'A7704'
+session = 'A7704-210405'
 #One drive path
 OneD = '/Users/vite/OneDrive - McGill University/PeyracheLab' + '/' + ID + '/' + session 
-episodes = []
+episodes = ['sleep', 'wake', 'sleep']
 
 # Load the spikes and shank data
 data_directory =  rootDir + '/' + ID + '/' + session 
