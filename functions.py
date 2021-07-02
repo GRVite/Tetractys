@@ -132,17 +132,18 @@ def xcrossCorr_fast(t1, t2, binsize, nbins, nbiter, jitter, confInt):
 def compute_AutoCorrs(spks, ep, binsize = 5, nbins = 200):
     # First let's prepare a pandas dataframe to receive the data
     times = np.arange(0, binsize*(nbins+1), binsize) - (nbins*binsize)/2    
-    autocorrs = pd.DataFrame(index = times, columns = np.arange(len(spks)))
-    firing_rates = pd.Series(index = np.arange(len(spks)))
+    autocorrs = pd.DataFrame(index = times, columns = spks.keys())
+    firing_rates = []
 
     # Now we can iterate over the dictionnary of spikes
-    for i in spks:
+    for i in spks.keys():
         # First we extract the time of spikes in ms during wake
         spk_time = spks[i].restrict(ep).as_units('ms').index.values
         # Calling the crossCorr function
         autocorrs[i] = crossCorr(spk_time, spk_time, binsize, nbins)
         # Computing the mean firing rate
-        firing_rates[i] = len(spk_time)/ep.tot_length('s')
+        firing_rates.append(len(spk_time)/ep.tot_length('s'))
+
 
     # We can divide the autocorrs by the firing_rates
     autocorrs = autocorrs / firing_rates
@@ -226,19 +227,39 @@ def computeAngularTuningCurves(spikes, angle, ep, nb_bins = 180, frequency = 120
 
     return tuning_curves
 
-def findHDCells(tuning_curves):
+
+def compute_CrossCorrs(spks, ep, binsize=10, nbins = 2000, norm = False):
+    """
+        
+    """    
+    from itertools import combinations
+    neurons = list(spks.keys())
+    times = np.arange(0, binsize*(nbins+1), binsize) - (nbins*binsize)/2
+    cc = pd.DataFrame(index = times, columns = list(combinations(neurons, 2)))
+        
+    for i,j in cc.columns:        
+        spk1 = spks[i].restrict(ep).as_units('ms').index.values
+        spk2 = spks[j].restrict(ep).as_units('ms').index.values        
+        tmp = crossCorr(spk1, spk2, binsize, nbins)        
+        fr = len(spk2)/ep.tot_length('s')
+        if norm:
+            cc[(i,j)] = tmp/fr
+        else:
+            cc[(i,j)] = tmp
+    return cc
+
+def findHDCells(tuning_curves, z = 50, p = 0.0001 , m = 1):
     """
         Peak firing rate larger than 1
         and Rayleigh test p<0.001 & z > 100
     """
-    cond1 = tuning_curves.max()>1.0
-    
+    cond1 = tuning_curves.max()>m
     from pycircstat.tests import rayleigh
     stat = pd.DataFrame(index = tuning_curves.columns, columns = ['pval', 'z'])
     for k in tuning_curves:
         stat.loc[k] = rayleigh(tuning_curves[k].index.values, tuning_curves[k].values)
-    cond2 = np.logical_and(stat['pval']<0.001,stat['z']>20)
-    tokeep = np.where(np.logical_and(cond1, cond2))[0]
+    cond2 = np.logical_and(stat['pval']<p,stat['z']>z)
+    tokeep = stat.index.values[np.where(np.logical_and(cond1, cond2))[0]]
     return tokeep, stat
 
 def decodeHD(tuning_curves, spikes, ep, px, bin_size = 200):

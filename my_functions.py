@@ -140,8 +140,19 @@ class raster:
             spikes_list.append(t)
         return  spikes_list
     
-    
-    
+    def gendataU(spikes_dic, epoch, opto_ep):
+        spikes_rast = {}
+        for s in spikes.keys():     
+            data = spikes[s].restrict(epoch)
+            spikes_list = []
+            stim_duration = opto_ep.loc[0,'end'] - opto_ep.loc[0,'start']
+            for i in range(len(opto_ep)):
+                interval = nts.IntervalSet(start = opto_ep.loc[i,'start'] - stim_duration,
+    								end = opto_ep.loc[i,'end'] + stim_duration)
+                t = spikes[s].restrict(interval).index.values - interval.loc[0,'start']
+                spikes_list.append(t)
+            spikes_rast[s]=spikes_list
+        return(spikes_rast)
 
 class matrix:
     def __init__(self):
@@ -317,7 +328,39 @@ class ephysplots:
         plt.tight_layout()
         plt.savefig('{}{}{}'.format(dir2save,  '/' + session + "_matrixb_" + label , '.pdf'))    
         
-    def raster(raster_list,  stimduration, neurons_sel, session, dir2save,
+    def raster_basic(raster_list, dir2save, units = 's', binsize = 1, colorctrl = "tan",
+                      linesize = 0.5, linestyles = 'solid', lineoffset = 1):
+        """
+        Parameters
+        ----------
+        """
+        if units == 'ms':
+            scale = 1000
+        elif units == 's':
+            scale = 1000000
+        else:
+            print("wrong units input")
+        # Scale the raster data based on the units selected
+        raster_list= [i/scale for i in raster_list]    
+        # Create an array for your histogram
+        array_hist = np.concatenate(raster_list).ravel()
+        # Generate the bins for this array
+        nbins = int(array_hist[-1]*2/binsize)
+        fig, (ax1,ax2) = plt.subplots(2, 1, sharex = True, figsize = [16,12])
+        ax1.eventplot(raster_list, linelengths = linesize, linestyles = linestyles, color='black')
+        ax1.set_ylabel('Neurons')
+        # ax1.set_yticks([*range(len(neurons_sel))])
+        # ax1.set_yticklabels( {v:k for k,v in enumerate(neurons_sel)} ) 
+        ax1.set_frame_on(False)
+        plt.show()
+        plt.suptitle(session)
+        data, edges = np.histogram(array_hist, nbins)
+        ax2.hist(array_hist, bins = nbins, color = colorctrl)
+        ax2.set_xlabel("{}{}".format('Time (',units+')'))
+        ax2.set_frame_on
+        plt.savefig('{}{}{}'.format(dir2save, "_raster", '.pdf'))   
+
+    def raster_opto(raster_list,  stimduration, neurons_sel, session, dir2save,
              intensity_label = "High intensity", units = 's', binsize = 1, \
                  ylabel = "Firing Rate", linesize = 0.5, \
                      colorstim = "lightcyan",  colorctrl = "tan"):
@@ -361,6 +404,79 @@ class ephysplots:
             scale = 1000000
         else:
             print("wrong units input")
+        # Scale the raster data based on the units selected
+        raster_list= [i/scale for i in raster_list]    
+        # Create an array for your histogram
+        array_hist = np.concatenate(raster_list).ravel()
+        # Generate the bins for this array
+        nbins = int(array_hist[-1]*2/binsize)
+        fig, (ax1,ax2) = plt.subplots(2, 1, sharex = True, figsize = [16,12])
+        ax1.eventplot(raster_list, linelengths = linesize, color='black')
+        left, bottom, height = (0, 0.5, len(raster_list))
+        rect = plt.Rectangle((left, bottom), stimduration, height,
+                             facecolor = colorstim, alpha = 0.5)
+        ax1.add_patch(rect)
+        ax1.set_ylabel('Neurons')
+        ax1.set_yticks([*range(len(neurons_sel))])
+        ax1.set_yticklabels( {v:k for k,v in enumerate(neurons_sel)} ) 
+        ax1.legend(["ChR2"])
+        ax1.set_frame_on(False)
+        data, edges = np.histogram(array_hist, nbins)
+        ax2.hist(array_hist, bins = nbins, color = colorctrl)
+        ax2.plot([0, stimduration],[data.max(), data.max()], linewidth = 7, 
+                 color = colorstim )
+        ax2.set_xlabel("{}{}".format('Time (',units+')'))
+        ax2.set_ylabel(ylabel)
+        ax2.set_frame_on(False)
+        plt.show()
+        plt.suptitle(session + " " + intensity_label)
+        plt.savefig('{}{}{}'.format(dir2save,  '/' + session + "_raster_neuronselected", '.pdf'))   
+        
+    def rasters_opto(raster_list,  stimduration, neurons_sel, session, dir2save,
+             intensity_label = "High intensity", units = 's', binsize = 1, \
+                 ylabel = "Firing Rate", linesize = 0.5, \
+                     colorstim = "lightcyan",  colorctrl = "tan"):
+        """
+
+        Parameters
+        ----------
+        raster_list : list
+            the output from raster.gendata
+        stimduration : int
+            duration of the stimulus in seconds
+        neurons_sel : list
+            indices of the neurons
+        session : string
+            session id, 'A4405-200312'
+        dir2save : string
+            address of the directory to save the plots
+        intensity_label : string
+            the default is "High intensity".
+        units : string
+            it can be 'ms' or 's'. The default is 's'.
+        binsize : int
+            the default is 1.
+        ylabel : string
+            the default is "Firing Rate".
+        linesize : float
+            the default is 0.5.
+        colorstim : string
+            the default is "lightcyan".
+        colorctrl : string
+            the default is "tan".
+
+        Returns
+        -------
+        None.
+
+        """
+        if units == 'ms':
+            scale = 1000
+        elif units == 's':
+            scale = 1000000
+        else:
+            print("wrong units input")
+        
         # Scale the raster data based on the units selected
         raster_list= [i/scale for i in raster_list]    
         # Create an array for your histogram

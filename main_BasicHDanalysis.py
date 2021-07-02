@@ -25,7 +25,7 @@ A. LOAD DATA
 
 # def analysis(data_directory_load, dir2save_plots, ID, session):
 # data_directory_load = '/Users/vite/navigation_system/Data/A6100/A6100-201026'
-data_directory_load = '/Users/vite/OneDrive - McGill University/PeyracheLab/A7701/A7701-210211/my_data'
+data_directory_load = '/Users/vite/OneDrive - McGill University/PeyracheLab/Data/A7701/A7701-210216/my_data'
 # data_directory_load = OneD
 # load data
 spikes = pickle.load(open(data_directory_load + '/spikes.pickle', 'rb'))
@@ -46,13 +46,13 @@ All, whole recording
 from functions import computeAngularTuningCurves
 tuning_curves = computeAngularTuningCurves(spikes, position['ry'], wake_ep, 60)
 from functions import smoothAngularTuningCurves
-tuning_curves = smoothAngularTuningCurves(tuning_curves, 10, 2)
+tuning_curves = smoothAngularTuningCurves(tuning_curves, 30, 5)
 numNeurons = len (spikes.keys())
 if numNeurons < 30:
     #Determine the number of raws
     raws = round(len(spikes)/5)
     plt.figure(figsize=(40,200))
-    for i, n in enumerate(selection):
+    for i, n in enumerate(spikes.keys()):
         ax=plt.subplot(5,raws+1,i+1, projection = 'polar')
         plt.plot(tuning_curves[n], color = 'darkorange')
         plt.title('Neuron' + ' ' + str(i) , loc ='center', pad=25)
@@ -71,7 +71,8 @@ else:
         for i, n in enumerate(selection):
             ax=plt.subplot(5,6,i+1, projection = 'polar')
             plt.plot(tuning_curves[n], color = 'darkorange')
-            plt.title('Neuron' + ' ' + str(i) + ' shank_' +str(shank[n]), loc ='center', pad=25)
+            plt.title('Neuron' + ' ' + str(i) + ' shank_' +str(shank[n]) + '(' + str(n) + ')', 
+                      loc ='center', pad=25)
         plt.subplots_adjust(wspace=0.4, hspace=2, top = 0.85)
         plt.show()
         plt.savefig(data_directory_load + '/plots' + '/HD_whole_recording' + str(g) +'.pdf')
@@ -79,17 +80,32 @@ else:
         stop+=30
         if g == it[-2]:
             stop  = numNeurons
-            
+     
+# 
+ids, stat = findHDCells(tuning_curves, z = 20, p = 0.05, m=1)
+neurons_sel = {key:val for key, val in spikes.items() if key in ids}
+tuning_curves_sel = computeAngularTuningCurves(spikes, position['ry'], wake_ep, 60)
+tuning_curves_sel = smoothAngularTuningCurves(tuning_curves, 10, 3)
+#
+raws = round(len(spikes)/5)
+plt.figure(figsize=(40,200))
+for i, n in enumerate(neurons_sel.keys()):
+    ax=plt.subplot(5,raws+1,i+1, projection = 'polar')
+    plt.plot(tuning_curves_sel[n], color = 'darkorange')
+    plt.title('Neuron' + ' ' + str(n) , loc ='center', pad=25)
+plt.subplots_adjust(wspace=0.4, hspace=2, top = 0.85)
+plt.show()
+plt.savefig(data_directory_load + '/plots' + '/HD_sel.pdf')
 
-
+    
 """
 All, selected interval
 """
 
 interval = nts.IntervalSet(start = wake_ep.loc[0,'start'], 
                            end=wake_ep.loc[0,'start']+10*60e6)
-tuning_curves = computeAngularTuningCurves(spikes, position['ry'], interval, 60)
-tuning_curves = smoothAngularTuningCurves(tuning_curves, window = 10, deviation = 7)
+tuning_curves = computeAngularTuningCurves(neurons_sel, position['ry'], interval, 60)
+tuning_curves = smoothAngularTuningCurves(tuning_curves, window = 10, deviation = 3)
 
 if numNeurons < 30:
     #Determine the number of raws
@@ -122,4 +138,11 @@ else:
         stop+=30
         if g == it[-2]:
             stop  = numNeurons
-            
+
+#store data
+for string, objct in zip(['spikes_HDCells', 'tuning_curves','tuning_curves_HDcells',\
+              'wake_ep'],
+              [neurons_sel, tuning_curves, tuning_curves_sel]):
+    #pickle it!          
+    with open(os.path.join(data_directory_load, string + '.pickle'), 'wb') as handle:
+        pickle.dump(objct, handle, protocol=pickle.HIGHEST_PROTOCOL)

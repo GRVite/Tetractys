@@ -27,17 +27,17 @@ from functions import *
 from scipy.ndimage import gaussian_filter
 from scipy.signal import correlate2d
 import pickle5 as pickle
-
+from math import ceil
 
 
 """
 A. LOAD DATA
 """
-
+session = 'A7706-210528'
 # def analysis(data_directory_load, dir2save_plots, ID, session):
 # data_directory_load = '/Users/vite/navigation_system/Data/A6100/A6100-201026'
-data_directory_load = '/Users/vite/OneDrive - McGill University/PeyracheLab/A7701/A7701-210217/my_data'
-# data_directory_load = OneD
+data_directory_load = '/Users/vite/OneDrive - McGill University/PeyracheLab/Data/A7706/' + session + '/my_data'
+# data_directory_load = '/Users/vite/OneDrive - McGill University/PeyracheLab/Data/A7701/A7701-210211/my_data'
 # load data
 spikes = pickle.load(open(data_directory_load + '/spikes.pickle', 'rb'))
 shank = pickle.load(open(data_directory_load  + '/shank.pickle', 'rb'))
@@ -49,9 +49,6 @@ wake_ep = pickle.load(open(data_directory_load  + '/wake_ep.pickle', 'rb'))
 dir2save_plots = data_directory_load + '/plots'
 if not os.path.exists(dir2save_plots):
     os.mkdir(dir2save_plots)
-
-
-
 
 """
 GENERAL
@@ -68,13 +65,14 @@ for s in np.unique(shank):
         NeurNShank.append(n)
 sigma = 1.2
 GF, ext = computePlaceFields(spikes, position[['x', 'z']], wake_ep, 30)
+
 if numNeurons < 30:
     raws = round(len(spikes)/5)
-    plt.figure(figsize=(50,60))
+    plt.figure(figsize=(5,20))
     for i,k in enumerate(GF.keys()):
         plt.subplot(5,raws+1,i+1)    
         tmp = gaussian_filter(GF[k].values, sigma = sigma)
-        im=imshow(tmp, extent = ext, cmap = 'jet', interpolation = 'bilinear')
+        im=plt.imshow(tmp, extent = ext, cmap = 'jet', interpolation = 'bilinear')
         #plt.colorbar(im,fraction=0.046, pad=0.04)
         plt.title(str([i]))
         plt.xticks([]),plt.yticks([])
@@ -90,11 +88,11 @@ else:
     for g in it:
         selection = range(start,stop)
         print("selection",selection)
-        plt.figure(figsize=(40,200))
+        plt.figure(figsize=(5,20))
         for i, n in enumerate(selection):
             plt.subplot(4,8,i+1)    
             tmp = gaussian_filter(GF[n].values, sigma = sigma)
-            im=imshow(tmp, extent = ext, cmap = 'jet', interpolation = 'bilinear')
+            im=plt.imshow(tmp, extent = ext, cmap = 'jet', interpolation = 'bilinear')
             #plt.colorbar(im,fraction=0.046, pad=0.04)
             plt.title('Neuron' + ' ' + str(NeurNShank[n]) + ' shank_' +str(shank[n]), loc ='center', pad=25)
             plt.xticks([]),plt.yticks([])
@@ -102,12 +100,12 @@ else:
             plt.subplots_adjust(wspace=0.4, hspace=2, top = 0.85)
             plt.show()
             plt.savefig(dir2save_plots + '/GC' + str(g) +'.pdf')
-        plt.figure(figsize=(40,50))
+        plt.figure(figsize=(5,20))
         for i,k in enumerate(selection):
             plt.subplot(4,8,i+1)
             tmp = gaussian_filter(GF[k].values, sigma = 0.5)
             tmp2 = correlate2d(tmp, tmp)
-            imshow(tmp2, extent = ext, cmap = 'jet', interpolation = 'bilinear')
+            plt.imshow(tmp2, extent = ext, cmap = 'jet', interpolation = 'bilinear')
             plt.title('Neuron' + ' ' + str(NeurNShank[k]) + ' shank_' +str(shank[k]), loc ='center', pad=25)
         plt.savefig(dir2save_plots + '/Au.pdf'+ str(g) +'.pdf')
         start+= 30

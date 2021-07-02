@@ -17,11 +17,11 @@ from shutil import copyfile
 # rootDir = '/Users/vite/navigation_system/Data'
 rootDir =  '/Volumes/Seagate/Kraken/K25'
 # Select animal ID and session
-ID = 'A7704'
-session = 'A7704-210405'
+ID = 'A7706'
+session = 'A7706-210519'
 #One drive path
-OneD = '/Users/vite/OneDrive - McGill University/PeyracheLab' + '/' + ID + '/' + session 
-episodes = ['sleep', 'wake', 'sleep']
+OneD = '/Users/vite/OneDrive - McGill University/PeyracheLab/Data' + '/' + ID + '/' + session 
+episodes = ['sleep', 'wake']
 
 # Load the spikes and shank data
 data_directory =  rootDir + '/' + ID + '/' + session 
